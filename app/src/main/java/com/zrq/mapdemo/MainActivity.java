@@ -6,15 +6,44 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.TextView;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.Toast;
 
-import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
+import com.amap.api.maps.AMap;
+import com.amap.api.maps.LocationSource;
+import com.amap.api.maps.LocationSource.OnLocationChangedListener;
+import com.amap.api.maps.MapView;
+import com.amap.api.maps.UiSettings;
+import com.amap.api.maps.model.BitmapDescriptorFactory;
+import com.amap.api.maps.model.LatLng;
+import com.amap.api.maps.model.Marker;
+import com.amap.api.maps.model.MarkerOptions;
+import com.amap.api.maps.model.MyLocationStyle;
+import com.amap.api.services.core.AMapException;
+import com.amap.api.services.core.LatLonPoint;
+import com.amap.api.services.core.PoiItem;
+import com.amap.api.services.geocoder.GeocodeAddress;
+import com.amap.api.services.geocoder.GeocodeQuery;
+import com.amap.api.services.geocoder.GeocodeResult;
+import com.amap.api.services.geocoder.GeocodeSearch;
+import com.amap.api.services.geocoder.RegeocodeAddress;
+import com.amap.api.services.geocoder.RegeocodeQuery;
+import com.amap.api.services.geocoder.RegeocodeResult;
+import com.amap.api.services.poisearch.PoiResult;
+import com.amap.api.services.poisearch.PoiSearch;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import pub.devrel.easypermissions.EasyPermissions;
 
@@ -22,11 +51,23 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private Context context;
-    private TextView mTvContent;
+    private MapView mMapView;
     //请求权限码
     private static final int REQUEST_PERMISSIONS = 1;
     private AMapLocationClient mLocationClient;
-    private AMapLocationClientOption mLocationOption;
+    private AMap aMap;
+    private OnLocationChangedListener mListener;
+    private PoiSearch.Query query;
+    private PoiSearch poiSearch;
+    private String cityCode;
+    private FloatingActionButton fabPOI;
+    private FloatingActionButton fabClear;
+    private EditText mEtSearch;
+    //地理编码搜素
+    private GeocodeSearch geocodeSearch;
+    private static final int PARSE_SUCCESS_CODE = 1000;
+    private String city;
+    private List<Marker> markerList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,39 +75,189 @@ public class MainActivity extends AppCompatActivity {
         context = this;
         setContentView(R.layout.activity_main);
         initView();
-        initLocation();
-        Log.d(TAG, "onCreate: " + mLocationClient);
+        initData(savedInstanceState);
         checkAndroidVersion();
+        initEvent();
     }
 
     private void initView() {
-        mTvContent = findViewById(R.id.tv_content);
+        mMapView = findViewById(R.id.map_view);
+        fabPOI = findViewById(R.id.fab_poi);
+        fabClear = findViewById(R.id.fab_clear);
+        mEtSearch = findViewById(R.id.et_search);
     }
 
-    private void initLocation() {
+    private void initData(Bundle savedInstanceState) {
+        markerList = new ArrayList<>();
+        initMap(savedInstanceState);
+        initLocation();
         try {
-            //初始化定位
-            AMapLocationClient.updatePrivacyShow(context, true, true);
-            AMapLocationClient.updatePrivacyAgree(context, true);
-            mLocationClient = new AMapLocationClient(context);
-        } catch (Exception e) {
+            geocodeSearch = new GeocodeSearch(context);
+        } catch (AMapException e) {
             e.printStackTrace();
         }
+    }
+
+    private void initEvent() {
+        //悬浮按钮的时间监听
+        fabPOI.setOnClickListener(v -> {
+            query = new PoiSearch.Query("购物", "", cityCode);
+            query.setPageSize(10);
+            query.setPageNum(1);
+            try {
+                poiSearch = new PoiSearch(this, query);
+                poiSearch.setOnPoiSearchListener(new PoiSearch.OnPoiSearchListener() {
+                    @Override
+                    public void onPoiSearched(PoiResult poiResult, int i) {
+                        //获取POI组数列表
+                        ArrayList<PoiItem> poiItems = poiResult.getPois();
+                        for (PoiItem poiItem : poiItems) {
+                            Log.d("MainActivity", " Title：" + poiItem.getTitle() + " Snippet：" + poiItem.getSnippet());
+                        }
+                    }
+
+                    @Override
+                    public void onPoiItemSearched(PoiItem poiItem, int i) {
+
+                    }
+                });
+                poiSearch.searchPOIAsyn();
+            } catch (AMapException e) {
+                e.printStackTrace();
+            }
+        });
+        fabClear.setOnClickListener(v -> {
+            for (Marker marker : markerList) {
+                marker.remove();
+            }
+            markerList.clear();
+            fabClear.hide();
+        });
+        //地图的点击和长按
+        aMap.setOnMapClickListener((latLng) -> {
+            latLngToAddress(latLng);
+            fabClear.show();
+            Marker marker = aMap.addMarker(new MarkerOptions().position(latLng).snippet("DefaultMarker"));
+            markerList.add(marker);
+        });
+        aMap.setOnMapLongClickListener((latLng) -> {
+        });
         //设置定位回调监听
         mLocationClient.setLocationListener((aMapLocation) -> {
             if (aMapLocation != null) {
                 if (aMapLocation.getErrorCode() == 0) {
-                    String address = aMapLocation.getAddress();
-                    Log.d(TAG, "initLocation: " + address);
-                    mTvContent.setText(address == null ? "无地址" : address);
+                    String sb
+                            = "纬度：" +
+                            aMapLocation.getLatitude() +
+                            "经度：" +
+                            aMapLocation.getLongitude() +
+                            "地址：" +
+                            aMapLocation.getAddress();
+                    Log.d(TAG, "initLocation: " + sb);
+                    mLocationClient.stopLocation();
+                    if (mListener != null) {
+                        mListener.onLocationChanged(aMapLocation);
+                    }
+                    fabPOI.show();
+                    cityCode = aMapLocation.getCityCode();
+                    city = aMapLocation.getCity();
                 } else {
                     Log.e(TAG, "location Error, Error Code : " + aMapLocation.getErrorCode() +
                             ", Error Info : " + aMapLocation.getErrorInfo());
                 }
             }
         });
+        geocodeSearch.setOnGeocodeSearchListener(new GeocodeSearch.OnGeocodeSearchListener() {
+            //坐标转地址
+            @Override
+            public void onRegeocodeSearched(RegeocodeResult regeocodeResult, int i) {
+                if (i == PARSE_SUCCESS_CODE) {
+                    RegeocodeAddress regeocodeAddress = regeocodeResult.getRegeocodeAddress();
+                    Toast.makeText(context, "地址" + regeocodeAddress.getFormatAddress(), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(context, "获取地址失败", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            //地址转坐标
+            @Override
+            public void onGeocodeSearched(GeocodeResult geocodeResult, int i) {
+                if (i == PARSE_SUCCESS_CODE) {
+                    List<GeocodeAddress> geocodeAddressList = geocodeResult.getGeocodeAddressList();
+                    if (geocodeAddressList != null && geocodeAddressList.size() > 0) {
+                        LatLonPoint latLonPoint = geocodeAddressList.get(0).getLatLonPoint();
+                        Toast.makeText(context, "坐标" + latLonPoint.getLongitude() + ", "
+                                + latLonPoint.getLatitude(), Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(context, "获取坐标失败", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        });
+        mEtSearch.setOnKeyListener((View v, int keyCode, KeyEvent event) -> {
+            if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_UP) {
+                String address = mEtSearch.getText().toString().trim();
+                if (address.isEmpty()) {
+                    Toast.makeText(context, "请输入地址", Toast.LENGTH_SHORT).show();
+                } else {
+                    InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
+                    GeocodeQuery query = new GeocodeQuery(address, city);
+                    geocodeSearch.getFromLocationNameAsyn(query);
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    //初始化地图
+    private void initMap(Bundle savedInstanceState) {
+        mMapView.onCreate(savedInstanceState);
+        aMap = mMapView.getMap();
+        aMap.setMinZoomLevel(12);
+        MyLocationStyle myLocationStyle = new MyLocationStyle();
+        myLocationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(R.mipmap.azi));
+        myLocationStyle.strokeColor(Color.argb(0x55, 0xA1, 0xFF, 0));
+        myLocationStyle.strokeWidth(5f);
+        myLocationStyle.radiusFillColor(Color.argb(0x55, 0xE1, 0xFF, 0xAD));
+        aMap.setMyLocationStyle(myLocationStyle);
+        aMap.setLocationSource(new LocationSource() {
+            @Override
+            public void activate(OnLocationChangedListener onLocationChangedListener) {
+                mListener = onLocationChangedListener;
+                if (mLocationClient != null) {
+                    mLocationClient.startLocation();
+                }
+            }
+
+            @Override
+            public void deactivate() {
+                mListener = null;
+                if (mLocationClient != null) {
+                    mLocationClient.stopLocation();
+                    mLocationClient.onDestroy();
+                }
+                mLocationClient = null;
+            }
+        });
+        aMap.setMyLocationEnabled(true);
+        UiSettings uiSettings = aMap.getUiSettings();
+        uiSettings.setZoomControlsEnabled(false);
+        uiSettings.setScaleControlsEnabled(true);
+    }
+
+    //初始化定位
+    private void initLocation() {
+        try {
+            AMapLocationClient.updatePrivacyShow(context, true, true);
+            AMapLocationClient.updatePrivacyAgree(context, true);
+            mLocationClient = new AMapLocationClient(context);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         //初始化AMapLocationClientOption对象
-        mLocationOption = new AMapLocationClientOption();
+        AMapLocationClientOption mLocationOption = new AMapLocationClientOption();
         //设置定位模式为AMapLocationMode.High_Accuracy，高精度模式
         mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
         //获取最近3s内精度最高的一次定位结果
@@ -79,6 +270,12 @@ public class MainActivity extends AppCompatActivity {
         mLocationOption.setLocationCacheEnable(false);
         //给定位客户端对象设置定位参数
         mLocationClient.setLocationOption(mLocationOption);
+    }
+
+    private void latLngToAddress(LatLng latLng) {
+        LatLonPoint latLonPoint = new LatLonPoint(latLng.latitude, latLng.longitude);
+        RegeocodeQuery query = new RegeocodeQuery(latLonPoint, 20, GeocodeSearch.AMAP);
+        geocodeSearch.getFromLocationAsyn(query);
     }
 
     @SuppressLint("ObsoleteSdkInt")
@@ -109,5 +306,30 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mMapView.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mMapView.onPause();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        mMapView.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mLocationClient.onDestroy();
+        mMapView.onDestroy();
     }
 }

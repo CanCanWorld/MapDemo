@@ -44,5 +44,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
     //Google推荐的EasyPermission库
     implementation 'pub.devrel:easypermissions:3.0.0'
+    //Material库
+    implementation 'com.google.android.material:material:1.2.0'
 
 }
