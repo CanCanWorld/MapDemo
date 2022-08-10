@@ -10,4 +10,6 @@
     <color name="green">#E1FFAD</color>
     <color name="_green">#A1FF00</color>
     <color name="__green">#2D4700</color>
+    <color name="purple">#B8AFDC</color>
+    <color name="__purple">#7258E1</color>
 </resources>

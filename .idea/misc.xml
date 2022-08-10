@@ -5,7 +5,8 @@
       <map>
         <entry key="..\:/Users/smq/AndroidStudioProjects/MapDemo/app/src/main/res/drawable/ic_baseline_accessible_forward_24.xml" value="0.2535" />
         <entry key="..\:/Users/smq/AndroidStudioProjects/MapDemo/app/src/main/res/drawable/shape_edit_text.xml" value="0.2495" />
-        <entry key="..\:/Users/smq/AndroidStudioProjects/MapDemo/app/src/main/res/layout/activity_main.xml" value="0.26975683890577506" />
+        <entry key="..\:/Users/smq/AndroidStudioProjects/MapDemo/app/src/main/res/layout/activity_main.xml" value="0.22" />
+        <entry key="..\:/Users/smq/AndroidStudioProjects/MapDemo/app/src/main/res/layout/activity_route.xml" value="0.18070652173913043" />
       </map>
     </option>
   </component>

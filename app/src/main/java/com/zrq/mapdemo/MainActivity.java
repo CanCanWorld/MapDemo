@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -19,15 +20,20 @@ import android.widget.Toast;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.maps.AMap;
+import com.amap.api.maps.CameraUpdate;
+import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.LocationSource;
 import com.amap.api.maps.LocationSource.OnLocationChangedListener;
 import com.amap.api.maps.MapView;
 import com.amap.api.maps.UiSettings;
 import com.amap.api.maps.model.BitmapDescriptorFactory;
+import com.amap.api.maps.model.CameraPosition;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
+import com.amap.api.maps.model.animation.AlphaAnimation;
+import com.amap.api.maps.model.animation.Animation;
 import com.amap.api.services.core.AMapException;
 import com.amap.api.services.core.LatLonPoint;
 import com.amap.api.services.core.PoiItem;
@@ -98,6 +104,67 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //初始化地图
+    private void initMap(Bundle savedInstanceState) {
+        mMapView.onCreate(savedInstanceState);
+        aMap = mMapView.getMap();
+        aMap.setMinZoomLevel(12);
+        MyLocationStyle myLocationStyle = new MyLocationStyle();
+//        myLocationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(R.mipmap.azi_2));
+        myLocationStyle.strokeColor(Color.argb(0x55, 0xB8, 0xAF, 0xDC));
+        myLocationStyle.strokeWidth(5f);
+        myLocationStyle.radiusFillColor(Color.argb(0x55, 0x72, 0x58, 0xE1));
+        aMap.setMyLocationStyle(myLocationStyle);
+        aMap.setLocationSource(new LocationSource() {
+            @Override
+            public void activate(OnLocationChangedListener onLocationChangedListener) {
+                mListener = onLocationChangedListener;
+                if (mLocationClient != null) {
+                    mLocationClient.startLocation();
+                }
+            }
+
+            @Override
+            public void deactivate() {
+                mListener = null;
+                if (mLocationClient != null) {
+                    mLocationClient.stopLocation();
+                    mLocationClient.onDestroy();
+                }
+                mLocationClient = null;
+            }
+        });
+        aMap.setMyLocationEnabled(true);
+        UiSettings uiSettings = aMap.getUiSettings();
+        uiSettings.setZoomControlsEnabled(false);
+        uiSettings.setScaleControlsEnabled(true);
+    }
+
+    //初始化定位
+    private void initLocation() {
+        try {
+            AMapLocationClient.updatePrivacyShow(context, true, true);
+            AMapLocationClient.updatePrivacyAgree(context, true);
+            mLocationClient = new AMapLocationClient(context);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //初始化AMapLocationClientOption对象
+        AMapLocationClientOption mLocationOption = new AMapLocationClientOption();
+        //设置定位模式为AMapLocationMode.High_Accuracy，高精度模式
+        mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
+        //获取最近3s内精度最高的一次定位结果
+        mLocationOption.setOnceLocationLatest(true);
+        //设置是否返回地址信息（默认返回地址信息）
+        mLocationOption.setNeedAddress(true);
+        //设置定位请求超时时间，单位是毫秒，默认30000毫秒，建议超时时间不要低于8000毫秒
+        mLocationOption.setHttpTimeOut(20_000);
+        //关闭缓存机制，高精度定位会产生缓存
+        mLocationOption.setLocationCacheEnable(false);
+        //给定位客户端对象设置定位参数
+        mLocationClient.setLocationOption(mLocationOption);
+    }
+
     private void initEvent() {
         //悬浮按钮的时间监听
         fabPOI.setOnClickListener(v -> {
@@ -135,12 +202,30 @@ public class MainActivity extends AppCompatActivity {
         });
         //地图的点击和长按
         aMap.setOnMapClickListener((latLng) -> {
-            latLngToAddress(latLng);
-            fabClear.show();
-            Marker marker = aMap.addMarker(new MarkerOptions().position(latLng).snippet("DefaultMarker"));
-            markerList.add(marker);
+            addMarker(latLng);
+            updateMapCenter(latLng);
         });
-        aMap.setOnMapLongClickListener((latLng) -> {
+        aMap.setOnMapLongClickListener(this::latLngToAddress);
+        //标记点的点击和拖拽
+        aMap.setOnMarkerClickListener((Marker marker) -> {
+            Toast.makeText(context, "点击了标点", Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        aMap.setOnMarkerDragListener(new AMap.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+                Log.d(TAG, "onMarkerDragStart");
+            }
+
+            @Override
+            public void onMarkerDrag(Marker marker) {
+                Log.d(TAG, "onMarkerDrag");
+            }
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+                Log.d(TAG, "onMarkerDragEnd");
+            }
         });
         //设置定位回调监听
         mLocationClient.setLocationListener((aMapLocation) -> {
@@ -211,71 +296,45 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    //初始化地图
-    private void initMap(Bundle savedInstanceState) {
-        mMapView.onCreate(savedInstanceState);
-        aMap = mMapView.getMap();
-        aMap.setMinZoomLevel(12);
-        MyLocationStyle myLocationStyle = new MyLocationStyle();
-        myLocationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(R.mipmap.azi));
-        myLocationStyle.strokeColor(Color.argb(0x55, 0xA1, 0xFF, 0));
-        myLocationStyle.strokeWidth(5f);
-        myLocationStyle.radiusFillColor(Color.argb(0x55, 0xE1, 0xFF, 0xAD));
-        aMap.setMyLocationStyle(myLocationStyle);
-        aMap.setLocationSource(new LocationSource() {
-            @Override
-            public void activate(OnLocationChangedListener onLocationChangedListener) {
-                mListener = onLocationChangedListener;
-                if (mLocationClient != null) {
-                    mLocationClient.startLocation();
-                }
-            }
-
-            @Override
-            public void deactivate() {
-                mListener = null;
-                if (mLocationClient != null) {
-                    mLocationClient.stopLocation();
-                    mLocationClient.onDestroy();
-                }
-                mLocationClient = null;
-            }
-        });
-        aMap.setMyLocationEnabled(true);
-        UiSettings uiSettings = aMap.getUiSettings();
-        uiSettings.setZoomControlsEnabled(false);
-        uiSettings.setScaleControlsEnabled(true);
-    }
-
-    //初始化定位
-    private void initLocation() {
-        try {
-            AMapLocationClient.updatePrivacyShow(context, true, true);
-            AMapLocationClient.updatePrivacyAgree(context, true);
-            mLocationClient = new AMapLocationClient(context);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //初始化AMapLocationClientOption对象
-        AMapLocationClientOption mLocationOption = new AMapLocationClientOption();
-        //设置定位模式为AMapLocationMode.High_Accuracy，高精度模式
-        mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
-        //获取最近3s内精度最高的一次定位结果
-        mLocationOption.setOnceLocationLatest(true);
-        //设置是否返回地址信息（默认返回地址信息）
-        mLocationOption.setNeedAddress(true);
-        //设置定位请求超时时间，单位是毫秒，默认30000毫秒，建议超时时间不要低于8000毫秒
-        mLocationOption.setHttpTimeOut(20_000);
-        //关闭缓存机制，高精度定位会产生缓存
-        mLocationOption.setLocationCacheEnable(false);
-        //给定位客户端对象设置定位参数
-        mLocationClient.setLocationOption(mLocationOption);
-    }
 
     private void latLngToAddress(LatLng latLng) {
         LatLonPoint latLonPoint = new LatLonPoint(latLng.latitude, latLng.longitude);
         RegeocodeQuery query = new RegeocodeQuery(latLonPoint, 20, GeocodeSearch.AMAP);
         geocodeSearch.getFromLocationAsyn(query);
+    }
+
+    /**
+     * 添加标记
+     *
+     * @param latLng 经纬度
+     */
+    private void addMarker(LatLng latLng) {
+        fabClear.show();
+        MarkerOptions markerOptions = new MarkerOptions();
+        markerOptions
+                .position(latLng)
+                .draggable(true)
+                .title("标题")
+                .snippet("详细信息");
+        Marker marker = aMap.addMarker(markerOptions);
+        marker.setIcon(BitmapDescriptorFactory.fromResource(R.mipmap.azi_0));
+        Animation animation = new AlphaAnimation(0f, 1f);
+        animation.setDuration(300);
+        animation.setInterpolator(new LinearInterpolator());
+        marker.setAnimation(animation);
+        marker.startAnimation();
+        markerList.add(marker);
+    }
+
+    /**
+     * 更新地图中心点
+     *
+     * @param latLng 经纬度
+     */
+    private void updateMapCenter(LatLng latLng) {
+        CameraPosition cameraPosition = new CameraPosition(latLng, 16, 30, 0);
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
+        aMap.animateCamera(cameraUpdate);
     }
 
     @SuppressLint("ObsoleteSdkInt")
