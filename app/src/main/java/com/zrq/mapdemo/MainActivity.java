@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -68,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
     private String cityCode;
     private FloatingActionButton fabPOI;
     private FloatingActionButton fabClear;
+    private FloatingActionButton fabRoute;
     private EditText mEtSearch;
     //地理编码搜素
     private GeocodeSearch geocodeSearch;
@@ -90,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
         mMapView = findViewById(R.id.map_view);
         fabPOI = findViewById(R.id.fab_poi);
         fabClear = findViewById(R.id.fab_clear);
+        fabRoute = findViewById(R.id.fab_route);
         mEtSearch = findViewById(R.id.et_search);
     }
 
@@ -200,6 +203,9 @@ public class MainActivity extends AppCompatActivity {
             markerList.clear();
             fabClear.hide();
         });
+        fabRoute.setOnClickListener(v -> {
+            startActivity(new Intent(context, RouteActivity.class));
+        });
         //地图的点击和长按
         aMap.setOnMapClickListener((latLng) -> {
             addMarker(latLng);
@@ -296,7 +302,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
     private void latLngToAddress(LatLng latLng) {
         LatLonPoint latLonPoint = new LatLonPoint(latLng.latitude, latLng.longitude);
         RegeocodeQuery query = new RegeocodeQuery(latLonPoint, 20, GeocodeSearch.AMAP);
@@ -317,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
                 .title("标题")
                 .snippet("详细信息");
         Marker marker = aMap.addMarker(markerOptions);
-        marker.setIcon(BitmapDescriptorFactory.fromResource(R.mipmap.azi_0));
+        marker.setIcon(BitmapDescriptorFactory.fromResource(R.mipmap.azi_2));
         Animation animation = new AlphaAnimation(0f, 1f);
         animation.setDuration(300);
         animation.setInterpolator(new LinearInterpolator());
