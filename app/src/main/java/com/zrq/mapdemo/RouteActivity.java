@@ -29,12 +29,18 @@ import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
 import com.amap.api.services.core.AMapException;
 import com.amap.api.services.core.LatLonPoint;
+import com.amap.api.services.route.BusPath;
 import com.amap.api.services.route.BusRouteResult;
+import com.amap.api.services.route.DrivePath;
 import com.amap.api.services.route.DriveRouteResult;
+import com.amap.api.services.route.RidePath;
 import com.amap.api.services.route.RideRouteResult;
 import com.amap.api.services.route.RouteSearch;
 import com.amap.api.services.route.WalkPath;
 import com.amap.api.services.route.WalkRouteResult;
+import com.zrq.mapdemo.overlay.BusRouteOverlay;
+import com.zrq.mapdemo.overlay.DrivingRouteOverlay;
+import com.zrq.mapdemo.overlay.RideRouteOverlay;
 import com.zrq.mapdemo.overlay.WalkRouteOverlay;
 import com.zrq.mapdemo.utils.MapUtil;
 
@@ -50,8 +56,9 @@ public class RouteActivity extends AppCompatActivity {
     private LatLonPoint mEndPoint;
     private RouteSearch routeSearch;
     private Spinner mSpTravelMode;
-    private static final String[] travelModeArray = {"步行出行", "骑行出行"};
+    private static final String[] travelModeArray = {"步行出行", "骑行出行", "驾车出行", "公交出行"};
     private static int TRAVEL_MODE = 0;
+    private String city;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +76,7 @@ public class RouteActivity extends AppCompatActivity {
     }
 
     private void initData(Bundle savedInstanceState) {
+
         initLocation();
         initMap(savedInstanceState);
         mLocationClient.startLocation();
@@ -111,6 +119,7 @@ public class RouteActivity extends AppCompatActivity {
                     if (mLocationChangeListener != null) {
                         mLocationChangeListener.onLocationChanged(aMapLocation);
                     }
+                    city = aMapLocation.getCity();
                 } else {
                     Log.d(TAG, "location error, error code : " + aMapLocation.getErrorCode() +
                             ", error info : " + aMapLocation.getErrorInfo());
@@ -122,15 +131,73 @@ public class RouteActivity extends AppCompatActivity {
             mEndPoint = convertToLatLonPoint(latLng);
             startRouteSearch();
         });
+
         routeSearch.setRouteSearchListener(new RouteSearch.OnRouteSearchListener() {
             @Override
             public void onBusRouteSearched(BusRouteResult busRouteResult, int i) {
+                aMap.clear();// 清理地图上的所有覆盖物
+                if (i == AMapException.CODE_AMAP_SUCCESS) {
+                    if (busRouteResult != null && busRouteResult.getPaths() != null) {
+                        if (busRouteResult.getPaths().size() > 0) {
+                            final BusPath busPath = busRouteResult.getPaths().get(0);
+                            if (busPath == null) {
+                                return;
+                            }
+                            BusRouteOverlay busRouteOverlay = new BusRouteOverlay(
+                                    context, aMap, busPath,
+                                    busRouteResult.getStartPos(),
+                                    busRouteResult.getTargetPos());
+                            busRouteOverlay.removeFromMap();
+                            busRouteOverlay.addToMap();
+                            busRouteOverlay.zoomToSpan();
 
+                            int dis = (int) busPath.getDistance();
+                            int dur = (int) busPath.getDuration();
+                            String des = MapUtil.getFriendlyTime(dur) + "(" + MapUtil.getFriendlyLength(dis) + ")";
+                            Log.d(TAG, des);
+                        } else if (busRouteResult.getPaths() == null) {
+                            Toast.makeText(context, "对不起，没有搜索到相关数据！", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(context, "对不起，没有搜索到相关数据！", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(context, "错误码" + i, Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override
             public void onDriveRouteSearched(DriveRouteResult driveRouteResult, int i) {
+                aMap.clear();// 清理地图上的所有覆盖物
+                if (i == AMapException.CODE_AMAP_SUCCESS) {
+                    if (driveRouteResult != null && driveRouteResult.getPaths() != null) {
+                        if (driveRouteResult.getPaths().size() > 0) {
+                            final DrivePath drivePath = driveRouteResult.getPaths()
+                                    .get(0);
+                            if (drivePath == null) {
+                                return;
+                            }
+                            DrivingRouteOverlay drivingRouteOverlay = new DrivingRouteOverlay(
+                                    context, aMap, drivePath,
+                                    driveRouteResult.getStartPos(),
+                                    driveRouteResult.getTargetPos(), null);
+                            drivingRouteOverlay.removeFromMap();
+                            drivingRouteOverlay.addToMap();
+                            drivingRouteOverlay.zoomToSpan();
 
+                            int dis = (int) drivePath.getDistance();
+                            int dur = (int) drivePath.getDuration();
+                            String des = MapUtil.getFriendlyTime(dur) + "(" + MapUtil.getFriendlyLength(dis) + ")";
+                            Log.d(TAG, des);
+                        } else if (driveRouteResult.getPaths() == null) {
+                            Toast.makeText(context, "对不起，没有搜索到相关数据！", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(context, "对不起，没有搜索到相关数据！", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(context, "错误码" + i, Toast.LENGTH_SHORT).show();
+                }
             }
 
             //步行规划路径结果
@@ -167,7 +234,30 @@ public class RouteActivity extends AppCompatActivity {
 
             @Override
             public void onRideRouteSearched(RideRouteResult rideRouteResult, int i) {
+                aMap.clear();
+                if (i == AMapException.CODE_AMAP_SUCCESS) {
+                    if (rideRouteResult != null && rideRouteResult.getPaths() != null) {
+                        if (rideRouteResult.getPaths().size() > 0) {
+                            final RidePath ridePath = rideRouteResult.getPaths().get(0);
+                            if (ridePath == null) return;
+                            RideRouteOverlay rideRouteOverlay = new RideRouteOverlay(context, aMap, ridePath, mStartPoint, mEndPoint);
+                            rideRouteOverlay.removeFromMap();
+                            rideRouteOverlay.addToMap();
+                            rideRouteOverlay.zoomToSpan();
 
+                            int dis = (int) ridePath.getDistance();
+                            int dur = (int) ridePath.getDuration();
+                            String des = MapUtil.getFriendlyTime(dur) + "(" + MapUtil.getFriendlyLength(dis) + ")";
+                            Log.d(TAG, des);
+                        } else if (rideRouteResult.getPaths() == null) {
+                            Toast.makeText(context, "对不起，没有搜索到相关数据！", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(context, "对不起，没有搜索到相关数据！", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(context, "错误码" + i, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -251,6 +341,15 @@ public class RouteActivity extends AppCompatActivity {
                 RouteSearch.RideRouteQuery rideRouteQuery = new RouteSearch.RideRouteQuery(fromAndTo);
                 routeSearch.calculateRideRouteAsyn(rideRouteQuery);
                 break;
+            case 2:
+                RouteSearch.DriveRouteQuery driveRouteQuery = new RouteSearch.DriveRouteQuery(fromAndTo,
+                        RouteSearch.DRIVING_SINGLE_DEFAULT, null, null, "");
+                routeSearch.calculateDriveRouteAsyn(driveRouteQuery);
+            case 3:
+                //构建驾车路线搜索对象 第三个参数表示公交查询城市区号，第四个参数表示是否计算夜班车，0表示不计算,1表示计算
+                RouteSearch.BusRouteQuery busRouteQuery = new RouteSearch.BusRouteQuery(fromAndTo,
+                        RouteSearch.BUS_LEASE_WALK, city, 0);
+                routeSearch.calculateBusRouteAsyn(busRouteQuery);
             default:
                 break;
         }
