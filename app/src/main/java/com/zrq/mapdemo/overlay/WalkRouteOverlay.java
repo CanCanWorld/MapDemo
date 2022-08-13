@@ -118,7 +118,6 @@ public class WalkRouteOverlay extends RouteOverlay {
         if (walkStationDescriptor == null) {
             walkStationDescriptor = getWalkBitmapDescriptor();
         }
-        mPolylineOptions = null;
         mPolylineOptions = new PolylineOptions();
         mPolylineOptions.color(getWalkColor()).width(getRouteWidth());
     }

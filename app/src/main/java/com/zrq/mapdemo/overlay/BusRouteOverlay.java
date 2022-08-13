@@ -37,9 +37,9 @@ public class BusRouteOverlay extends RouteOverlay {
      *
      * @param context 当前activity。
      * @param amap    地图对象。
-     * @param path    公交路径规划的一个路段。详见搜索服务模块的路径查询包（com.amap.api.services.route）中的类<strong> <a href="../../../../../../Search/com/amap/api/services/route/BusPath.html" title="com.amap.api.services.route中的类">BusPath</a></strong>。
-     * @param start   起点坐标。详见搜索服务模块的核心基础包（com.amap.api.services.core）中的类 <strong><a href="../../../../../../Search/com/amap/api/services/core/LatLonPoint.html" title="com.amap.api.services.core中的类">LatLonPoint</a></strong>。
-     * @param end     终点坐标。详见搜索服务模块的核心基础包（com.amap.api.services.core）中的类 <strong><a href="../../../../../../Search/com/amap/api/services/core/LatLonPoint.html" title="com.amap.api.services.core中的类">LatLonPoint</a></strong>。
+     * @param path    公交路径规划的一个路段。详见搜索服务模块的路径查询包（com.amap.api.services.route）中的类
+     * @param start   起点坐标。详见搜索服务模块的核心基础包（com.amap.api.services.core）中的类
+     * @param end     终点坐标。详见搜索服务模块的核心基础包（com.amap.api.services.core）中的类
      * @since V2.1.0
      */
     public BusRouteOverlay(Context context, AMap amap, BusPath path,
@@ -63,7 +63,6 @@ public class BusRouteOverlay extends RouteOverlay {
      * 5.公交最后一站和终点间无步行，之间连起来<br>
      */
     public void addToMap() {
-
         try {
             List<BusStep> busSteps = busPath.getSteps();
             for (int i = 0; i < busSteps.size(); i++) {
@@ -183,8 +182,8 @@ public class BusRouteOverlay extends RouteOverlay {
     }
 
     private void addRailwayStep(RouteRailwayItem railway) {
-        List<LatLng> railwaylistpoint = new ArrayList<LatLng>();
-        List<RailwayStationItem> railwayStationItems = new ArrayList<RailwayStationItem>();
+        List<LatLng> railwaylistpoint = new ArrayList<>();
+        List<RailwayStationItem> railwayStationItems = new ArrayList<>();
         railwayStationItems.add(railway.getDeparturestop());
         railwayStationItems.addAll(railway.getViastops());
         railwayStationItems.add(railway.getArrivalstop());

@@ -10,14 +10,15 @@
         android:id="@+id/ll_top"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:padding="10dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="出行方式"
+            android:text="@string/test"
             android:textColor="@color/black"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <Spinner
@@ -25,10 +26,43 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
     </LinearLayout>
+
     <com.amap.api.maps.MapView
         android:id="@+id/map_view_route"
         android:layout_width="match_parent"
-        android:layout_below="@id/ll_top"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_below="@id/ll_top" />
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true">
+
+        <TextView
+            android:id="@+id/tv_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="50dp"
+            android:text="@string/test"
+            android:textColor="@color/black"
+            android:textSize="18sp" />
+
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/fab_detail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="10dp"
+            android:text="@string/test"
+            android:textColor="#006BAA"
+            app:backgroundTint="@color/white"
+            app:icon="@drawable/ic_baseline_chevron_right_24"
+            app:iconGravity="textEnd"
+            app:iconTint="#006BAA"
+            app:iconTintMode="src_atop"
+            tools:ignore="RelativeOverlap" />
+    </RelativeLayout>
 </RelativeLayout>

@@ -23,8 +23,8 @@ import com.zrq.mapdemo.R;
  * 路线图层叠加
  */
 public class RouteOverlay {
-    protected List<Marker> stationMarkers = new ArrayList<Marker>();
-    protected List<Polyline> allPolyLines = new ArrayList<Polyline>();
+    protected List<Marker> stationMarkers = new ArrayList<>();
+    protected List<Polyline> allPolyLines = new ArrayList<>();
     protected Marker startMarker;
     protected Marker endMarker;
     protected LatLng startPoint;
@@ -40,6 +40,7 @@ public class RouteOverlay {
 
     /**
      * 去掉BusRouteOverlay上所有的Marker。
+     *
      * @since V2.1.0
      */
     public void removeFromMap() {
@@ -80,56 +81,67 @@ public class RouteOverlay {
             driveBit = null;
         }
     }
+
     /**
      * 给起点Marker设置图标，并返回更换图标的图片。如不用默认图片，需要重写此方法。
+     *
      * @return 更换的Marker图片。
      * @since V2.1.0
      */
     protected BitmapDescriptor getStartBitmapDescriptor() {
-        return BitmapDescriptorFactory.fromResource(R.mipmap.azi_2);
+        return BitmapDescriptorFactory.fromResource(R.mipmap.yellow_1);
     }
+
     /**
      * 给终点Marker设置图标，并返回更换图标的图片。如不用默认图片，需要重写此方法。
+     *
      * @return 更换的Marker图片。
      * @since V2.1.0
      */
     protected BitmapDescriptor getEndBitmapDescriptor() {
         return BitmapDescriptorFactory.fromResource(R.mipmap.azi_2);
     }
+
     /**
      * 给公交Marker设置图标，并返回更换图标的图片。如不用默认图片，需要重写此方法。
+     *
      * @return 更换的Marker图片。
      * @since V2.1.0
      */
     protected BitmapDescriptor getBusBitmapDescriptor() {
-        return BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_directions_bus_24);
+        return BitmapDescriptorFactory.fromResource(R.mipmap.bus);
     }
+
     /**
      * 给步行Marker设置图标，并返回更换图标的图片。如不用默认图片，需要重写此方法。
+     *
      * @return 更换的Marker图片。
      * @since V2.1.0
      */
     protected BitmapDescriptor getWalkBitmapDescriptor() {
-        return BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_directions_walk_24);
+        return BitmapDescriptorFactory.fromResource(R.mipmap.light);
+    }
+
+    protected BitmapDescriptor getRideBitmapDescriptor() {
+        return BitmapDescriptorFactory.fromResource(R.mipmap.pos);
     }
 
     protected BitmapDescriptor getDriveBitmapDescriptor() {
-        return BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_directions_car_24);
+        return BitmapDescriptorFactory.fromResource(R.mipmap.steer_2);
     }
 
     protected void addStartAndEndMarker() {
         startMarker = mAMap.addMarker((new MarkerOptions())
                 .position(startPoint).icon(getStartBitmapDescriptor())
                 .title("\u8D77\u70B9"));
-        // startMarker.showInfoWindow();
 
         endMarker = mAMap.addMarker((new MarkerOptions()).position(endPoint)
                 .icon(getEndBitmapDescriptor()).title("\u7EC8\u70B9"));
-        // mAMap.moveCamera(CameraUpdateFactory.newLatLngZoom(startPoint,
-        // getShowRouteZoom()));
     }
+
     /**
      * 移动镜头到当前的视角。
+     *
      * @since V2.1.0
      */
     public void zoomToSpan() {
@@ -153,8 +165,10 @@ public class RouteOverlay {
         b.include(new LatLng(endPoint.latitude, endPoint.longitude));
         return b.build();
     }
+
     /**
      * 路段节点图标控制显示接口。
+     *
      * @param visible true为显示节点图标，false为不显示。
      * @since V2.3.1
      */
@@ -172,22 +186,22 @@ public class RouteOverlay {
     }
 
     protected void addStationMarker(MarkerOptions options) {
-        if(options == null) {
+        if (options == null) {
             return;
         }
         Marker marker = mAMap.addMarker(options);
-        if(marker != null) {
+        if (marker != null) {
             stationMarkers.add(marker);
         }
 
     }
 
     protected void addPolyLine(PolylineOptions options) {
-        if(options == null) {
+        if (options == null) {
             return;
         }
         Polyline polyline = mAMap.addPolyline(options);
-        if(polyline != null) {
+        if (polyline != null) {
             allPolyLines.add(polyline);
         }
     }
@@ -203,6 +217,7 @@ public class RouteOverlay {
     /**
      * 自定义路线颜色。
      * return 自定义路线颜色。
+     *
      * @since V2.2.1
      */
     protected int getBusColor() {
@@ -213,8 +228,5 @@ public class RouteOverlay {
         return Color.parseColor("#537edc");
     }
 
-    // protected int getShowRouteZoom() {
-    // return 15;
-    // }
 }
 

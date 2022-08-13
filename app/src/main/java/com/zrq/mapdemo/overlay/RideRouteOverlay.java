@@ -90,7 +90,7 @@ public class RideRouteOverlay extends RouteOverlay {
     private void initPolylineOptions() {
 
         if (walkStationDescriptor == null) {
-            walkStationDescriptor = BitmapDescriptorFactory.fromResource(R.mipmap.azi_2);
+            walkStationDescriptor = getRideBitmapDescriptor();
         }
         mPolylineOptions = new PolylineOptions();
         mPolylineOptions.color(getDriveColor()).width(getRouteWidth());

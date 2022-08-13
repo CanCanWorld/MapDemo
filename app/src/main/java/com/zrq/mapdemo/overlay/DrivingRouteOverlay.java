@@ -33,7 +33,7 @@ public class DrivingRouteOverlay extends RouteOverlay {
     private boolean throughPointMarkerVisible = true;
     private List<TMC> tmcs;
     private PolylineOptions mPolylineOptions;
-    private PolylineOptions mPolylineOptionscolor;
+    private PolylineOptions mPolylineOptionsColor;
     private Context mContext;
     private boolean isColorfulline = true;
     private float mWidth = 25;
@@ -87,8 +87,8 @@ public class DrivingRouteOverlay extends RouteOverlay {
             if (mWidth == 0 || drivePath == null) {
                 return;
             }
-            mLatLngsOfPath = new ArrayList<LatLng>();
-            tmcs = new ArrayList<TMC>();
+            mLatLngsOfPath = new ArrayList<>();
+            tmcs = new ArrayList<>();
             List<DriveStep> drivePaths = drivePath.getSteps();
             for (DriveStep step : drivePaths) {
                 List<LatLonPoint> latlonPoints = step.getPolyline();
@@ -112,7 +112,7 @@ public class DrivingRouteOverlay extends RouteOverlay {
             addThroughPointMarker();
             if (isColorfulline && tmcs.size() > 0) {
                 colorWayUpdate(tmcs);
-                showcolorPolyline();
+                showColorPolyline();
             } else {
                 showPolyline();
             }
@@ -134,8 +134,8 @@ public class DrivingRouteOverlay extends RouteOverlay {
         addPolyLine(mPolylineOptions);
     }
 
-    private void showcolorPolyline() {
-        addPolyLine(mPolylineOptionscolor);
+    private void showColorPolyline() {
+        addPolyLine(mPolylineOptionsColor);
 
     }
 
@@ -150,36 +150,36 @@ public class DrivingRouteOverlay extends RouteOverlay {
             return;
         }
         TMC segmentTrafficStatus;
-        mPolylineOptionscolor = null;
-        mPolylineOptionscolor = new PolylineOptions();
-        mPolylineOptionscolor.width(getRouteWidth());
-        List<Integer> colorList = new ArrayList<Integer>();
-        mPolylineOptionscolor.add(MapUtil.convertToLatLng(tmcSection.get(0).getPolyline().get(0)));
+        mPolylineOptionsColor = new PolylineOptions();
+        mPolylineOptionsColor.width(getRouteWidth());
+        List<Integer> colorList = new ArrayList<>();
+        mPolylineOptionsColor.add(MapUtil.convertToLatLng(tmcSection.get(0).getPolyline().get(0)));
         colorList.add(getDriveColor());
         for (int i = 0; i < tmcSection.size(); i++) {
             segmentTrafficStatus = tmcSection.get(i);
-            int color = getcolor(segmentTrafficStatus.getStatus());
-            List<LatLonPoint> mployline = segmentTrafficStatus.getPolyline();
-            for (int j = 1; j < mployline.size(); j++) {
-                mPolylineOptionscolor.add(MapUtil.convertToLatLng(mployline.get(j)));
+            int color = getColor(segmentTrafficStatus.getStatus());
+            List<LatLonPoint> mPloyLine = segmentTrafficStatus.getPolyline();
+            for (int j = 1; j < mPloyLine.size(); j++) {
+                mPolylineOptionsColor.add(MapUtil.convertToLatLng(mPloyLine.get(j)));
                 colorList.add(color);
             }
         }
         colorList.add(getDriveColor());
-        mPolylineOptionscolor.colorValues(colorList);
+        mPolylineOptionsColor.colorValues(colorList);
     }
 
-    private int getcolor(String status) {
-        if (status.equals("畅通")) {
-            return Color.GREEN;
-        } else if (status.equals("缓行")) {
-            return Color.YELLOW;
-        } else if (status.equals("拥堵")) {
-            return Color.RED;
-        } else if (status.equals("严重拥堵")) {
-            return Color.parseColor("#990033");
-        } else {
-            return Color.parseColor("#537edc");
+    private int getColor(String status) {
+        switch (status) {
+            case "畅通":
+                return Color.GREEN;
+            case "缓行":
+                return Color.YELLOW;
+            case "拥堵":
+                return Color.RED;
+            case "严重拥堵":
+                return Color.parseColor("#990033");
+            default:
+                return Color.parseColor("#537edc");
         }
     }
 
@@ -227,7 +227,7 @@ public class DrivingRouteOverlay extends RouteOverlay {
 
     private void addThroughPointMarker() {
         if (this.throughPointList != null && this.throughPointList.size() > 0) {
-            LatLonPoint latLonPoint = null;
+            LatLonPoint latLonPoint;
             for (int i = 0; i < this.throughPointList.size(); i++) {
                 latLonPoint = this.throughPointList.get(i);
                 if (latLonPoint != null) {

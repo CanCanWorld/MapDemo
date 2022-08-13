@@ -7,12 +7,14 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
@@ -38,6 +40,7 @@ import com.amap.api.services.route.RideRouteResult;
 import com.amap.api.services.route.RouteSearch;
 import com.amap.api.services.route.WalkPath;
 import com.amap.api.services.route.WalkRouteResult;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.zrq.mapdemo.overlay.BusRouteOverlay;
 import com.zrq.mapdemo.overlay.DrivingRouteOverlay;
 import com.zrq.mapdemo.overlay.RideRouteOverlay;
@@ -59,6 +62,8 @@ public class RouteActivity extends AppCompatActivity {
     private static final String[] travelModeArray = {"步行出行", "骑行出行", "驾车出行", "公交出行"};
     private static int TRAVEL_MODE = 0;
     private String city;
+    private TextView mTvTime;
+    private ExtendedFloatingActionButton mFabDetail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,10 +78,11 @@ public class RouteActivity extends AppCompatActivity {
     private void initView() {
         mMapView = findViewById(R.id.map_view_route);
         mSpTravelMode = findViewById(R.id.spinner_travel_mode);
+        mTvTime = findViewById(R.id.tv_time);
+        mFabDetail = findViewById(R.id.fab_detail);
     }
 
     private void initData(Bundle savedInstanceState) {
-
         initLocation();
         initMap(savedInstanceState);
         mLocationClient.startLocation();
@@ -133,6 +139,7 @@ public class RouteActivity extends AppCompatActivity {
         });
 
         routeSearch.setRouteSearchListener(new RouteSearch.OnRouteSearchListener() {
+            //公交规划路径结果
             @Override
             public void onBusRouteSearched(BusRouteResult busRouteResult, int i) {
                 aMap.clear();// 清理地图上的所有覆盖物
@@ -150,7 +157,7 @@ public class RouteActivity extends AppCompatActivity {
                             busRouteOverlay.removeFromMap();
                             busRouteOverlay.addToMap();
                             busRouteOverlay.zoomToSpan();
-
+                            busRouteOverlay.setNodeIconVisibility(false);
                             int dis = (int) busPath.getDistance();
                             int dur = (int) busPath.getDuration();
                             String des = MapUtil.getFriendlyTime(dur) + "(" + MapUtil.getFriendlyLength(dis) + ")";
@@ -166,6 +173,7 @@ public class RouteActivity extends AppCompatActivity {
                 }
             }
 
+            //开车规划路径结果
             @Override
             public void onDriveRouteSearched(DriveRouteResult driveRouteResult, int i) {
                 aMap.clear();// 清理地图上的所有覆盖物
@@ -184,7 +192,7 @@ public class RouteActivity extends AppCompatActivity {
                             drivingRouteOverlay.removeFromMap();
                             drivingRouteOverlay.addToMap();
                             drivingRouteOverlay.zoomToSpan();
-
+                            drivingRouteOverlay.setNodeIconVisibility(false);
                             int dis = (int) drivePath.getDistance();
                             int dur = (int) drivePath.getDuration();
                             String des = MapUtil.getFriendlyTime(dur) + "(" + MapUtil.getFriendlyLength(dis) + ")";
@@ -216,11 +224,18 @@ public class RouteActivity extends AppCompatActivity {
                             walkRouteOverlay.removeFromMap();
                             walkRouteOverlay.addToMap();
                             walkRouteOverlay.zoomToSpan();
-
+                            walkRouteOverlay.setNodeIconVisibility(false);
                             int dis = (int) walkPath.getDistance();
                             int dur = (int) walkPath.getDuration();
                             String des = MapUtil.getFriendlyTime(dur) + "(" + MapUtil.getFriendlyLength(dis) + ")";
                             Log.d(TAG, des);
+                            mTvTime.setText(des);
+                            mFabDetail.setOnClickListener(v -> {
+                                Intent intent = new Intent(context, RouteDetailActivity.class);
+                                intent.putExtra("type", 0);
+                                intent.putExtra("path", walkPath);
+                                startActivity(intent);
+                            });
                         } else if (walkRouteResult.getPaths() == null) {
                             Toast.makeText(context, "对不起，没有搜索到相关数据！", Toast.LENGTH_SHORT).show();
                         }
@@ -232,6 +247,7 @@ public class RouteActivity extends AppCompatActivity {
                 }
             }
 
+            //骑行规划路径结果
             @Override
             public void onRideRouteSearched(RideRouteResult rideRouteResult, int i) {
                 aMap.clear();
@@ -244,7 +260,7 @@ public class RouteActivity extends AppCompatActivity {
                             rideRouteOverlay.removeFromMap();
                             rideRouteOverlay.addToMap();
                             rideRouteOverlay.zoomToSpan();
-
+                            rideRouteOverlay.setNodeIconVisibility(false);
                             int dis = (int) ridePath.getDistance();
                             int dur = (int) ridePath.getDuration();
                             String des = MapUtil.getFriendlyTime(dur) + "(" + MapUtil.getFriendlyLength(dis) + ")";
@@ -294,7 +310,7 @@ public class RouteActivity extends AppCompatActivity {
         mUiSettings.setScaleControlsEnabled(true);
         // 自定义定位图标
         MyLocationStyle myLocationStyle = new MyLocationStyle();
-        myLocationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(R.mipmap.azi_2));
+        myLocationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(R.mipmap.yellow_1));
         //设置定位的Style
         aMap.setMyLocationStyle(myLocationStyle);
 
@@ -326,7 +342,7 @@ public class RouteActivity extends AppCompatActivity {
         aMap.addMarker(new MarkerOptions()
                 .position(convertToLatLng(mStartPoint))
                 .title("起点")
-                .icon(BitmapDescriptorFactory.fromResource(R.mipmap.azi_2)));
+                .icon(BitmapDescriptorFactory.fromResource(R.mipmap.yellow_1)));
         aMap.addMarker(new MarkerOptions()
                 .position(convertToLatLng(mEndPoint))
                 .title("终点")
